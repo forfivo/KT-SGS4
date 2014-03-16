@@ -8,17 +8,14 @@ export KTVER="--$MUXEDNAMELONG--"
 export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
 export INITRAMFS_DEST=$KERNELDIR/kernel/usr/initramfs
-export INITRAMFS_SOURCE=`readlink -f ..`/Ramdisks/$PLATFORM"_"$CARRIER"4.4"
+export INITRAMFS_SOURCE=`readlink -f ..`/ramdisk-kt
 export CONFIG_$PLATFORM_BUILD=y
 export PACKAGEDIR=$PARENT_DIR/Packages/$PLATFORM
 #Enable FIPS mode
 export USE_SEC_FIPS_MODE=true
 export ARCH=arm
-# export CROSS_COMPILE=$PARENT_DIR/linaro4.5/bin/arm-eabi-
-# export CROSS_COMPILE=/home/ktoonsez/kernel/siyah/arm-2011.03/bin/arm-none-eabi-
-# export CROSS_COMPILE=/home/ktoonsez/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
-# export CROSS_COMPILE=/home/ktoonsez/aokp4.2/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-
-export CROSS_COMPILE=$PARENT_DIR/linaro4.7/bin/arm-eabi-
+export KERNEL_CONFIG=KT_jf_defconfig;
+export CROSS_COMPILE=$PARENT_DIR/linaro_toolchains_2014/arm-cortex_a15-linux-gnueabihf-linaro_4.8.3-2014.03/bin/arm-cortex_a15-linux-gnueabihf-
 
 time_start=$(date +%s.%N)
 
@@ -32,6 +29,17 @@ mkdir -p $PACKAGEDIR/system/etc/init.d
 
 echo "Create initramfs dir"
 mkdir -p $INITRAMFS_DEST
+
+# copy new config
+cp $KERNELDIR/.config $KERNELDIR/arch/arm/configs/$KERNEL_CONFIG;
+
+# remove all old modules before compile
+for i in `find $KERNELDIR/ -name "*.ko"`; do
+	rm -f $i;
+done;
+for i in `find $PACKAGEDIR/system/lib/modules/ -name "*.ko"`; do
+	rm -f $i;
+done;
 
 echo "Remove old initramfs dir"
 rm -rf $INITRAMFS_DEST/*
@@ -49,19 +57,19 @@ rm $PACKAGEDIR/zImage
 rm arch/arm/boot/zImage
 
 echo "Make the kernel"
-make VARIANT_DEFCONFIG=jf_$CARRIER"_defconfig" KT_jf_defconfig SELINUX_DEFCONFIG=selinux_defconfig
+make VARIANT_DEFCONFIG=jf_$CARRIER"_defconfig" $KERNEL_CONFIG SELINUX_DEFCONFIG=selinux_defconfig
+
+# copy config
+if [ ! -f $KERNELDIR/.config ]; then
+	cp $KERNELDIR/arch/arm/configs/$KERNEL_CONFIG $KERNELDIR/.config;
+fi;
+
+# read config
+. $KERNELDIR/.config;
 
 echo "Modding .config file - "$KTVER
 sed -i 's,CONFIG_LOCALVERSION="-KT-SGS4",CONFIG_LOCALVERSION="'$KTVER'",' .config
 
-HOST_CHECK=`uname -n`
-if [ $HOST_CHECK = 'ktoonsez-VirtualBox' ] || [ $HOST_CHECK = 'task650-Underwear' ]; then
-	echo "Ktoonsez/task650 24!"
-	make -j24
-else
-	echo "Others! - " + $HOST_CHECK
-	make -j`grep 'processor' /proc/cpuinfo | wc -l`
-fi;
 
 echo "Copy modules to Package"
 cp -a $(find . -name *.ko -print |grep -v initramfs) $PACKAGEDIR/system/lib/modules/
@@ -70,6 +78,34 @@ if [ $ADD_KTWEAKER = 'Y' ]; then
 	cp /home/ktoonsez/workspace/com.ktoonsez.KTmonitor.apk $PACKAGEDIR/system/app/com.ktoonsez.KTmonitor.apk
 fi;
 
+echo "Remove old zImage"
+# remove previous zImage files
+if [ -e $PACKAGEDIR/boot.img ]; then
+	rm $PACKAGEDIR/boot.img;
+fi;
+
+if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
+	rm $KERNELDIR/arch/arm/boot/zImage;
+fi;
+
+HOST_CHECK=`uname -n`
+NAMBEROFCPUS=$(expr `grep processor /proc/cpuinfo | wc -l` + 1);
+echo $HOST_CHECK
+
+echo "Making kernel";
+make -j${NAMBEROFCPUS} || exit 1;
+
+echo "Copy modules to Package"
+for i in `find $KERNELDIR -name '*.ko'`; do
+	cp -av $i $PACKAGEDIR/system/lib/modules/;
+done;
+
+for i in `find $PACKAGEDIR/system/lib/modules/ -name '*.ko'`; do
+	${CROSS_COMPILE}strip --strip-unneeded $i;
+done;
+
+chmod 644 $PACKAGEDIR/system/lib/modules/*;
+
 if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	echo "Copy zImage to Package"
 	cp arch/arm/boot/zImage $PACKAGEDIR/zImage
@@ -77,19 +113,20 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	echo "Make boot.img"
 	./mkbootfs $INITRAMFS_DEST | gzip > $PACKAGEDIR/ramdisk.gz
 	./mkbootimg --cmdline 'console=null androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3F ehci-hcd.park=3 maxcpus=4' --kernel $PACKAGEDIR/zImage --ramdisk $PACKAGEDIR/ramdisk.gz --base 0x80200000 --pagesize 2048 --ramdisk_offset 0x02000000 --output $PACKAGEDIR/boot.img 
-	if [ $EXEC_LOKI = 'Y' ]; then
-		echo "Executing loki"
-		./loki_patch-linux-x86_64 boot aboot$CARRIER.img $PACKAGEDIR/boot.img $PACKAGEDIR/boot.lok
-		rm $PACKAGEDIR/boot.img
-	fi;
 	cd $PACKAGEDIR
 	if [ $EXEC_LOKI = 'Y' ]; then
 		cp -R ../META-INF-SEC ./META-INF
 	else
 		cp -R ../META-INF .
 	fi;
-	rm ramdisk.gz
-	rm zImage
+
+	if [ -e ramdisk.gz ]; then
+		rm ramdisk.gz;
+	fi;
+
+	if [ -e zImage ]; then
+		rm zImage;
+	fi;
 	rm ../$MUXEDNAMESHRT.zip
 	zip -r ../$MUXEDNAMELONG.zip .
 

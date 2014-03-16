@@ -63,8 +63,10 @@ static int restart_mode;
 #ifndef CONFIG_SEC_DEBUG
 void *restart_reason;
 #endif
+#ifdef CONFIG_SEC_DEBUG
 int kernel_sec_get_debug_level(void);
 #define KERNEL_SEC_DEBUG_LEVEL_LOW      (0x574F4C44)
+#endif
 int pmic_reset_irq;
 static void __iomem *msm_tmr0_base;
 
@@ -342,7 +344,7 @@ void msm_restart(char mode, const char *cmd)
 		set_kernel_crash_magic_number();
 reset:
 #endif /* CONFIG_LGE_CRASH_HANDLER */
-#ifdef CONFIG_SEC_DEBUG
+#if 1
 	else {
 		printk(KERN_NOTICE "%s : clear reset flag\r\n", __func__);
 		__raw_writel(0x12345678, restart_reason);
@@ -383,7 +385,7 @@ static int __init msm_pmic_restart_init(void)
 
 #if defined(CONFIG_MACH_JF_VZW) || defined(CONFIG_MACH_MELIUS)
 	return 0;
-#else
+#elif defined(CONFIG_SEC_DEBUG)
 	if (kernel_sec_get_debug_level() != KERNEL_SEC_DEBUG_LEVEL_LOW)
 		return 0;
 #endif

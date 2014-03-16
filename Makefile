@@ -171,6 +171,8 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
 				  -e s/sh[234].*/sh/ )
 
+SUBARCH := arm
+
 # Cross compiling and selecting different set of gcc/bin-utils
 # ---------------------------------------------------------------------------
 #
@@ -243,8 +245,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-HOSTCC       = gcc
-HOSTCXX      = g++
+HOSTCC       = ccache gcc
+HOSTCXX      = ccache g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
 HOSTCXXFLAGS = -O2
 
@@ -330,7 +332,7 @@ include $(srctree)/scripts/Kbuild.include
 
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-REAL_CC		= $(CROSS_COMPILE)gcc
+REAL_CC		= ccache $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -352,10 +354,14 @@ CC		= $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   =
+
+CFLAGS_MODULE   = -DMODULE -fno-pic -mcpu=cortex-a15 -mtune=cortex-a15 \
+		  -march=armv7-a -marm -mfpu=neon-vfpv4 \
+		  -mvectorize-with-neon-quad
 AFLAGS_MODULE   =
-LDFLAGS_MODULE  =
-CFLAGS_KERNEL	=
+LDFLAGS_MODULE  = --strip-debug
+CFLAGS_KERNEL	= -mcpu=cortex-a15 -mtune=cortex-a15 -march=armv7-a \
+		  -marm -mfpu=neon-vfpv4 -mvectorize-with-neon-quad
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -369,11 +375,15 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS   := -w -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks
+		   -Wno-maybe-uninitialized \
+		   -Wno-sizeof-pointer-memaccess \
+		   -fno-delete-null-pointer-checks \
+		   -march=armv7-a -marm -mfpu=neon-vfpv4
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
@@ -564,9 +574,11 @@ endif # $(dot-config)
 all: vmlinux
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+        KBUILD_CFLAGS += -Os $(call cc-disable-warning,maybe-uninitialized,)
+else ifdef CONFIG_CC_OPTIMIZE_FOR_SPEED
+        KBUILD_CFLAGS += -O3
 else
-KBUILD_CFLAGS	+= -O2
+        KBUILD_CFLAGS += -O2
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
@@ -660,10 +672,10 @@ endif
 #endif
 
 #Disable the whole of the following block to disable LKM AUTH
-ifeq ($(TIMA_ENABLED),1)
-       KBUILD_CFLAGS += -DTIMA_LKM_AUTH_ENABLED -DTIMA_TEST_INFRA #-DTIMA_LKM_SET_PAGE_ATTRIB
-       KBUILD_AFLAGS += -DTIMA_LKM_AUTH_ENABLED #-DTIMA_LKM_SET_PAGE_ATTRIB
-endif
+#ifeq ($(TIMA_ENABLED),1)
+#       KBUILD_CFLAGS += -DTIMA_LKM_AUTH_ENABLED -DTIMA_TEST_INFRA #-DTIMA_LKM_SET_PAGE_ATTRIB
+#       KBUILD_AFLAGS += -DTIMA_LKM_AUTH_ENABLED #-DTIMA_LKM_SET_PAGE_ATTRIB
+#endif
 
 # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
 # But warn user when we do so

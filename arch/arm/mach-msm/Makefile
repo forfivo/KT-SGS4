@@ -7,6 +7,8 @@ endif
 obj-y += clock.o clock-voter.o clock-dummy.o
 obj-y += modem_notifier.o subsystem_map.o
 obj-$(CONFIG_CPU_FREQ_MSM) += cpufreq.o
+obj-$(CONFIG_INTELLI_PLUG) += intelli_plug.o
+obj-$(CONFIG_ALUCARD_HOTPLUG) += alucard_hotplug.o
 obj-$(CONFIG_DEBUG_FS) += nohlt.o clock-debug.o
 obj-$(CONFIG_KEXEC) += msm_kexec.o
 
@@ -27,7 +29,10 @@ obj-$(CONFIG_ARCH_MSM_KRAIT) += acpuclock-krait.o
 obj-$(CONFIG_ARCH_MSM7X27) += acpuclock-7627.o clock-pll.o
 obj-$(CONFIG_ARCH_MSM_SCORPION) += pmu.o
 obj-$(CONFIG_ARCH_MSM_SCORPIONMP) += perf_event_msm_l2.o
-obj-$(CONFIG_ARCH_MSM_KRAIT) += msm-krait-l2-accessors.o pmu.o perf_event_msm_krait_l2.o
+obj-$(CONFIG_ARCH_MSM_KRAIT) += msm-krait-l2-accessors.o pmu.o
+ifdef CONFIG_PERF_EVENTS
+obj-$(CONFIG_ARCH_MSM_KRAIT) += perf_event_msm_krait_l2.o
+endif
 obj-$(CONFIG_ARCH_MSM_KRAIT) += krait-scm.o
 obj-$(CONFIG_ARCH_MSM7X27A) += pmu.o
 obj-$(CONFIG_DEBUG_FS) += perf_debug.o

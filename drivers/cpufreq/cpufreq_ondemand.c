@@ -31,7 +31,7 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(20)
 #define DEF_FREQUENCY_UP_THRESHOLD		(80)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
@@ -52,7 +52,7 @@
 #define SUP_SLOW_UP_DUR (2)
 
 #if defined(SMART_UP_PLUS)
-static unsigned int SUP_THRESHOLD_STEPS[SUP_MAX_STEP] = {75, 85, 90};
+static unsigned int SUP_THRESHOLD_STEPS[SUP_MAX_STEP] = {75, 80, 90};
 static unsigned int SUP_FREQ_STEPS[SUP_MAX_STEP] = {4, 3, 2};
 static unsigned int min_range = 108000;
 #endif
@@ -84,7 +84,7 @@ history_load hist_load[SUP_CORE_NUM] = {};
 static unsigned int min_sampling_rate;
 
 #define LATENCY_MULTIPLIER			(1000)
-#define MIN_LATENCY_MULTIPLIER			(100)
+#define MIN_LATENCY_MULTIPLIER			(10)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
 #define POWERSAVE_BIAS_MAXLEVEL			(1000)

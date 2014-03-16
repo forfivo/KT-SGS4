@@ -151,7 +151,7 @@ static unsigned int get_nr_run_avg(void)
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_SAMPLING_DOWN_FACTOR		(3)
+#define DEF_SAMPLING_DOWN_FACTOR		(2)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(14)
 #define DEF_FREQUENCY_UP_THRESHOLD		(95)
@@ -159,7 +159,7 @@ static unsigned int get_nr_run_avg(void)
 /* for multiple freq_step */
 #define DEF_UP_THRESHOLD_DIFF	(5)
 
-#define DEF_FREQUENCY_MIN_SAMPLE_RATE		(10000)
+#define DEF_FREQUENCY_MIN_SAMPLE_RATE		(5000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
 #define DEF_SAMPLING_RATE			(40000)
@@ -173,7 +173,7 @@ static unsigned int get_nr_run_avg(void)
 #define DEF_UP_NR_CPUS				(1)
 #define DEF_CPU_UP_RATE				(9)
 #define DEF_CPU_DOWN_RATE			(3)
-#define DEF_FREQ_STEP				(30)
+#define DEF_FREQ_STEP				(55)
 /* for multiple freq_step */
 #define DEF_FREQ_STEP_DEC			(13)
 

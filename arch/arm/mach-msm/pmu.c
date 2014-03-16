@@ -15,6 +15,7 @@
 #include <mach/irqs.h>
 #include <mach/socinfo.h>
 
+#if defined(CONFIG_PERF_EVENTS)
 #if defined(CONFIG_ARCH_MSM_KRAITMP) || defined(CONFIG_ARCH_MSM_SCORPIONMP)
 static DEFINE_PER_CPU(u32, pmu_irq_cookie);
 
@@ -56,6 +57,7 @@ static struct arm_pmu_platdata multicore_data = {
 	.free_pmu_irq = multicore_free_irq,
 };
 #endif
+#endif
 
 static struct resource cpu_pmu_resource[] = {
 	{
@@ -90,7 +92,6 @@ static struct platform_device cpu_pmu_device = {
 	.num_resources	= ARRAY_SIZE(cpu_pmu_resource),
 };
 
-
 static struct platform_device *pmu_devices[] = {
 	&cpu_pmu_device,
 #ifdef CONFIG_CPU_HAS_L2_PMU
@@ -106,8 +107,10 @@ static int __init msm_pmu_init(void)
 	 * Defaults to unicore API {request,free}_irq().
 	 * See arch/arm/kernel/perf_event.c
 	 */
+#ifdef CONFIG_PERF_EVENTS
 #if defined(CONFIG_ARCH_MSM_KRAITMP) || defined(CONFIG_ARCH_MSM_SCORPIONMP)
 	cpu_pmu_device.dev.platform_data = &multicore_data;
+#endif
 #endif
 
 	return platform_add_devices(pmu_devices, ARRAY_SIZE(pmu_devices));
